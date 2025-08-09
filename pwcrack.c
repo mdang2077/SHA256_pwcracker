@@ -4,30 +4,36 @@
 #include <stdint.h>
 #include <openssl/sha.h>
 #include <assert.h>
+#include <ctype.h>
+
 
 const int SHA_LENGTH = 32;
 
-char uppercase(char c)
-{
-	if (c >= 'a' && c <= 'z')
-	{
-		c -= 32;
+int8_t isSpecial(char character) {
+	// Special variations: a/A/@, e/E/3, o/O/0, i,I,1
+	switch (character) {
+		case 'a':
+			return 1;
+		case 'A':
+			return 1;
+		case 'e':
+			return 1;
+		case 'E':
+			return 1;
+		case 'o':
+			return 1;
+		case 'O':
+			return 1;
+		case 'i':
+			return 1;
+		case 'I':
+			return 1;
 	}
-	return c;
+	return 0;
 }
-
-char lowercase(char c)
-{
-	if (c >= 'A' && c <= 'Z')
-	{
-		c += 32;
-	}
-	return c;
-}
-
 int hex_to_dec(char c)
 {
-	char input = uppercase(c);
+	char input = toupper(c);
 	if (input >= 'A' && input <= 'F')
 	{
 		return input -= 55;
@@ -57,6 +63,7 @@ void hexstr_to_hash(char hexstr[], unsigned char hash[32])
 	}
 }
 
+// Checks a single variation of the password
 int8_t check_password(char password[], unsigned char given_hash[32])
 {
 	unsigned char password_hash[32];
@@ -66,51 +73,98 @@ int8_t check_password(char password[], unsigned char given_hash[32])
 
 	int count = 0;
 	uint8_t i = 0;
-	for (i = 0; i < 32; i+=1)
-	{
-		if (password_hash[i] != given[i])
+	
+	return memcmp(password_hash, given_hash, SHA256_DIGEST_LENGTH) == 0;
+}
+
+int8_t check_case_variations(char *word, unsigned char given_hash[32]) {
+    int len = strlen(word);
+    int alpha_count = 0;
+    int alpha_indexes[len];
+
+    // Record indexes of letters only
+    for (int i = 0; i < len; i++) {
+        if (isalpha(word[i])) {
+            alpha_indexes[alpha_count++] = i;
+        }
+    }
+
+    int total_variants = 1 << alpha_count;  // 2^alpha_count
+    char variant[len + 1];
+
+    for (int mask = 0; mask < total_variants; mask++) {
+        strcpy(variant, word);
+
+        for (int bit = 0; bit < alpha_count; bit++) {
+            int idx = alpha_indexes[bit];
+            if (mask & (1 << bit)) {
+                variant[idx] = toupper(variant[idx]);
+            } else {
+                variant[idx] = tolower(variant[idx]);
+            }
+        }
+		if (check_password(variant, given_hash))
 		{
-			count++;
-		}
-	}
-	if (count == 0)
-	{
-		return 1;
-	}
+			strcpy(word, variant);
+			return 1;
+		}		
+    }
 	return 0;
 }
 
+int8_t check_special_variations(char* word, unsigned char given_hash[]) {
+	// Special variations: a/A/@, e/E/3, o/O/0, i,I,1
+	int len = strlen(word);
+	int special_char_count = 0;
+	int special_char_index[len];
+
+	char variant[len + 1];
+
+	for (int i = 0; i < len; i++) {
+		if (isSpecial(word[i])) {
+			special_char_index[special_char_count++] = i;
+		}
+	}
+
+	int total_variants = 1 << special_char_count;
+
+	for (int mask = 0; mask < total_variants; mask++) {
+        strcpy(variant, word);
+
+        for (int bit = 0; bit < special_char_count; bit++) {
+            int idx = special_char_index[bit];
+            if (mask & (1 << bit)) {
+                variant[idx] = '@';
+            } else {
+                variant[idx] = 'a';
+            }
+        }
+		if (check_password(variant, given_hash))
+		{
+			strcpy(word, variant);
+			return 1;
+		}		
+    }
+
+	return 0;
+}
+
+// Functions runs against multiple variations of the password
 int8_t crack_password(char password[], unsigned char given_hash[])
 {
 	//Make copy of password plus a byte for the null terminator
 	char tmp[strlen(password) + 1];
 	strcpy(tmp, password);
 
-	int i = 0;
-	// Uppercase all letters one at a time, then use check_password on it with given hash
-	for(i = 0; i < strlen(password); i++)
-	{
-		tmp[i] = uppercase(tmp[i]);
-		if (check_password(tmp, given_hash))
-		{
-			password[i] = tmp[i];
-			return 1;
-		}
-		//Resets string back to original
-		strcpy(tmp, password);
+	if (check_case_variations(tmp, given_hash)) {
+		strcpy(password, tmp); // copy back the match
+		return 1;
+	}
 
-	}
-	// Lowercase all letters one at a time, then use check_password on it with given hash
-	for(i = 0; i< strlen(password); i++)
-	{
-		tmp[i] = lowercase(tmp[i]);
-		if (check_password(tmp, given_hash))
-		{
-			password[i] = tmp[i];
-			return 1;			
-		}
-		strcpy(tmp, password);
-	}
+	/* if (check_special_variations(tmp, given_hash)) {
+		strcpy(password, tmp); // copy back the match
+		return 1;
+	} */
 
 	// Change number
 	for(int i = 0; i< strlen(password); i++)
@@ -172,8 +226,8 @@ void test_check_password() {
 }
 
 void test_crack_password() {
-	char password[] = "paSsword";
-	char hash_as_hexstr[] = "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"; // SHA256 hash of "password"
+	char password[] = "paSSwoRd";
+	char hash_as_hexstr[] = "63e7808ef6bb86780c5c3b5f7e7b7f29b89127c05e1f3c8c4ae25aa381fcf5ff"; // SHA256 hash of "password"
 	unsigned char given_hash[32];
 	hexstr_to_hash(hash_as_hexstr, given_hash);
 	int8_t match = crack_password(password, given_hash);
@@ -183,7 +237,7 @@ void test_crack_password() {
 
 const int testing = 0;
 int main(int argc, char** argv) {
-  if(testing) {
+	if(testing) {
     test_hex_to_byte();
     test_hexstr_to_hash();
     test_check_password();
@@ -198,21 +252,27 @@ int main(int argc, char** argv) {
     return 1;
   }
   
-  char line[1000];
+  const char *filename = "pwdictionary.txt";
+  FILE *file = fopen(filename, "r");
+
+  char word[256];
   unsigned char hash[32];
-  while (fgets(line, sizeof(line), stdin) != NULL) {
-	  hexstr_to_hash(argv[1], hash);
-	  line[strcspn(line, "\n")] = '\0';
-	  if (crack_password(line, hash))
+  hexstr_to_hash(argv[1], hash);
+
+  while (fgets(word, sizeof(word), file)) {
+		word[strcspn(word, "\n")] = 0;  // strip newline
+		printf("Trying word: %s\n", word);
+		if (crack_password(word, hash))
 	  {
-		printf("Found password: SHA256(%s) = %s\n", line, argv[1]);
+		printf("Found password: SHA256(%s) = %s\n", word, argv[1]);
 		return 0;
 	  }
+		// insert hash checking logic here
 
-  }
-  printf("Did not find a matching password\n");
-  return 0;
-
+	}
+	fclose(file);
+	printf("Did not find a matching password\n");
+	return 0;
 }
 
 

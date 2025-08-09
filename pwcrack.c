@@ -103,15 +103,24 @@ int8_t check_case_variations(char *word, unsigned char given_hash[32]) {
                 variant[idx] = tolower(variant[idx]);
             }
         }
-		if (check_password(variant, given_hash))
-		{
-			strcpy(word, variant);
-			return 1;
-		}		
+		for (int i = 0; i < len; i++) {
+			if (isdigit(variant[i])) {
+				char original_digit = variant[i];
+				for (char digit = '0'; digit <= '9'; digit++) {
+					variant[i] = digit;
+					if (check_password(variant, given_hash)) {
+						strcpy(word, variant);
+						return 1;
+					}
+				}
+				variant[i] = original_digit; // restore original digit before next digit index
+			}
+		}
     }
 	return 0;
 }
 
+// Unfinished
 int8_t check_special_variations(char* word, unsigned char given_hash[]) {
 	// Special variations: a/A/@, e/E/3, o/O/0, i,I,1
 	int len = strlen(word);
@@ -166,24 +175,6 @@ int8_t crack_password(char password[], unsigned char given_hash[])
 		return 1;
 	} */
 
-	// Change number
-	for(int i = 0; i< strlen(password); i++)
-	{
-		if (tmp[i] >= '0' && tmp[i] <= '9')
-		{
-			tmp[i] = '0';
-			for (int j = 0; j < 10; j++)
-			{
-				tmp[i] += 1;
-				if (check_password(tmp, given_hash))
-				{
-					password[i] = tmp[i];
-					return 1;			
-				}
-			}
-		}
-		strcpy(tmp, password);
-	}
 	// No matches
 	return 0;
 
@@ -252,7 +243,7 @@ int main(int argc, char** argv) {
     return 1;
   }
   
-  const char *filename = "pwdictionary.txt";
+  const char *filename = "rockyou.txt";
   FILE *file = fopen(filename, "r");
 
   char word[256];
@@ -261,7 +252,7 @@ int main(int argc, char** argv) {
 
   while (fgets(word, sizeof(word), file)) {
 		word[strcspn(word, "\n")] = 0;  // strip newline
-		printf("Trying word: %s\n", word);
+		//printf("Trying word: %s\n", word);
 		if (crack_password(word, hash))
 	  {
 		printf("Found password: SHA256(%s) = %s\n", word, argv[1]);

@@ -243,7 +243,7 @@ int main(int argc, char** argv) {
     return 1;
   }
   
-  const char *filename = "rockyou.txt";
+  const char *filename = "rockyou_part_aa";
   FILE *file = fopen(filename, "r");
 
   char word[256];
@@ -258,10 +258,23 @@ int main(int argc, char** argv) {
 		printf("Found password: SHA256(%s) = %s\n", word, argv[1]);
 		return 0;
 	  }
-		// insert hash checking logic here
 
 	}
 	fclose(file);
+	
+	filename = "rockyou_part_ab";
+	file = fopen(filename, "r");
+	while (fgets(word, sizeof(word), file)) {
+		word[strcspn(word, "\n")] = 0;  // strip newline
+		//printf("Trying word: %s\n", word);
+		if (crack_password(word, hash))
+	  {
+		printf("Found password: SHA256(%s) = %s\n", word, argv[1]);
+		return 0;
+	  }
+		// insert hash checking logic here
+
+	}
 	printf("Did not find a matching password\n");
 	return 0;
 }

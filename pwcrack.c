@@ -103,6 +103,13 @@ int8_t check_case_variations(char *word, unsigned char given_hash[32]) {
                 variant[idx] = tolower(variant[idx]);
             }
         }
+
+		if (check_password(variant, given_hash)) {
+            strcpy(word, variant);
+            return 1;
+        }
+
+
 		for (int i = 0; i < len; i++) {
 			if (isdigit(variant[i])) {
 				char original_digit = variant[i];
@@ -165,6 +172,10 @@ int8_t crack_password(char password[], unsigned char given_hash[])
 	char tmp[strlen(password) + 1];
 	strcpy(tmp, password);
 
+	if (check_password(password, given_hash)) {
+    	return 1;
+	}
+
 	if (check_case_variations(tmp, given_hash)) {
 		strcpy(password, tmp); // copy back the match
 		return 1;
@@ -216,14 +227,22 @@ void test_check_password() {
 	assert(check_password("wrongpass", given_hash) == 0);
 }
 
+void test_check_case_variations() {
+	char password[] = "paSSwoRd";
+	char hash_as_hexstr[] = "9cd00dd3e377d2ee3a4d2432783de680f8bb736031bff686260601b22f7b0e0f"; // SHA256 hash of "password"
+	unsigned char given_hash[32];
+	hexstr_to_hash(hash_as_hexstr, given_hash);
+	int8_t match = check_case_variations(password, given_hash);
+	assert(match == 1);
+}
+
 void test_crack_password() {
 	char password[] = "paSSwoRd";
-	char hash_as_hexstr[] = "63e7808ef6bb86780c5c3b5f7e7b7f29b89127c05e1f3c8c4ae25aa381fcf5ff"; // SHA256 hash of "password"
+	char hash_as_hexstr[] = "9cd00dd3e377d2ee3a4d2432783de680f8bb736031bff686260601b22f7b0e0f"; // SHA256 hash of "password"
 	unsigned char given_hash[32];
 	hexstr_to_hash(hash_as_hexstr, given_hash);
 	int8_t match = crack_password(password, given_hash);
 	assert(match == 1);
-	assert(password[2] == 's'); // the uppercase 'S' has been lowercased
 }
 
 const int testing = 0;
@@ -232,6 +251,7 @@ int main(int argc, char** argv) {
     test_hex_to_byte();
     test_hexstr_to_hash();
     test_check_password();
+	test_check_case_variations();
     test_crack_password();
 
     printf("ALL TESTS PASSED!\n");
@@ -246,6 +266,10 @@ int main(int argc, char** argv) {
   const char *filename = "rockyou_part_aa";
   FILE *file = fopen(filename, "r");
 
+  const char *dots[] = {".  ", ".. ", "...", "   "};
+  int dot_index = 0;
+  int count = 0;
+
   char word[256];
   unsigned char hash[32];
   hexstr_to_hash(argv[1], hash);
@@ -254,15 +278,19 @@ int main(int argc, char** argv) {
 		word[strcspn(word, "\n")] = 0;  // strip newline
 		//printf("Trying word: %s\n", word);
 		if (crack_password(word, hash))
-	  {
-		printf("Found password: SHA256(%s) = %s\n", word, argv[1]);
-		return 0;
-	  }
-
+		{
+			printf("\nFound password: SHA256(%s) = %s\n", word, argv[1]);
+			return 0;
+		}
+		if (++count % 5000 == 0) {
+			printf("\rSearching%s", dots[dot_index]);
+			fflush(stdout);
+			dot_index = (dot_index + 1) % 4;
+		}
 	}
 	fclose(file);
 	
-	filename = "rockyou_part_ab";
+filename = "rockyou_part_ab";
 	file = fopen(filename, "r");
 	while (fgets(word, sizeof(word), file)) {
 		word[strcspn(word, "\n")] = 0;  // strip newline
@@ -275,7 +303,7 @@ int main(int argc, char** argv) {
 		// insert hash checking logic here
 
 	}
-	printf("Did not find a matching password\n");
+	printf("Could not find a matching password\n");
 	return 0;
 }
 

@@ -1,9 +1,9 @@
 # SHA256_pwcracker
 Given an input of a SHA256 hash, the user can input guesses of their own, and if their guess is a match or a variation of the password, the program will know and notify the user.
 
-Program currently checks variations for all potential capitalizations of the words in the dictionary. Because of the vastness, the search make take a while.
+Program currently checks variations for all potential capitalizations of the words in the dictionary. Because of the vastness, the search make takes time.
 
-Examples
+# Examples
 Input: ./pwcrack 5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8
 Output: Found password: SHA256(password) = 5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8
 

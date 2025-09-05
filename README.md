@@ -1,5 +1,5 @@
 # SHA256_pwcracker
-Given an input of a SHA256 hash, the user can input guesses of their own, and if their guess is a match or a variation of the password, the program will know and notify the user.
+Given an input of a SHA256 hash, the program runs the hash and compares it to rock.txt passwords. The program can detect the password or simple variations of the password, and will notify the user if the hash is cracked.
 
 Program currently checks variations for all potential capitalizations of the words in the dictionary. Because of the vastness, the search make takes time.
 

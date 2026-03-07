@@ -12,21 +12,10 @@ const int SHA_LENGTH = 32;
 int8_t isSpecial(char character) {
 	// Special variations: a/A/@, e/E/3, o/O/0, i,I,1
 	switch (character) {
-		case 'a':
-			return 1;
-		case 'A':
-			return 1;
-		case 'e':
-			return 1;
-		case 'E':
-			return 1;
-		case 'o':
-			return 1;
-		case 'O':
-			return 1;
-		case 'i':
-			return 1;
-		case 'I':
+		case 'a': case 'A': case '@':
+		case 'e': case 'E': case '3':
+		case 'o': case 'O': case '0':
+		case 'i': case 'I': case '1':
 			return 1;
 	}
 	return 0;
@@ -68,11 +57,7 @@ int8_t check_password(char password[], unsigned char given_hash[32])
 {
 	unsigned char password_hash[32];
 	// Will store address rather than value, unsigning all the values when I use given later in the function
-	unsigned char *given = (unsigned char *)given_hash;
 	SHA256(password, strlen(password), password_hash);
-
-	int count = 0;
-	uint8_t i = 0;
 	
 	return memcmp(password_hash, given_hash, SHA256_DIGEST_LENGTH) == 0;
 }
@@ -109,7 +94,7 @@ int8_t check_case_variations(char *word, unsigned char given_hash[32]) {
             return 1;
         }
 
-
+		/* Digit Brute force, removed to reduce space
 		for (int i = 0; i < len; i++) {
 			if (isdigit(variant[i])) {
 				char original_digit = variant[i];
@@ -122,7 +107,7 @@ int8_t check_case_variations(char *word, unsigned char given_hash[32]) {
 				}
 				variant[i] = original_digit; // restore original digit before next digit index
 			}
-		}
+		} */
     }
 	return 0;
 }
@@ -149,11 +134,21 @@ int8_t check_special_variations(char* word, unsigned char given_hash[]) {
 
         for (int bit = 0; bit < special_char_count; bit++) {
             int idx = special_char_index[bit];
-            if (mask & (1 << bit)) {
-                variant[idx] = '@';
-            } else {
-                variant[idx] = 'a';
-            }
+            
+			char c = tolower(word[idx]);
+
+			if (c =- 'a') {
+				variant[idx] = (mask & (1 << bit)) ? '@' : 'a';
+			}
+			else if (c =- 'e') {
+				variant[idx] = (mask & (1 << bit)) ? '3' : 'e';
+			}
+			else if (c =- 'a') {
+				variant[idx] = (mask & (1 << bit)) ? '0' : 'o';
+			}
+			else if (c =- 'a') {
+				variant[idx] = (mask & (1 << bit)) ? '1' : 'i';
+			}
         }
 		if (check_password(variant, given_hash))
 		{
@@ -181,10 +176,10 @@ int8_t crack_password(char password[], unsigned char given_hash[])
 		return 1;
 	}
 
-	/* if (check_special_variations(tmp, given_hash)) {
+	if (check_special_variations(tmp, given_hash)) {
 		strcpy(password, tmp); // copy back the match
 		return 1;
-	} */
+	}
 
 	// No matches
 	return 0;
@@ -262,10 +257,17 @@ int main(int argc, char** argv) {
     fprintf(stderr, "Usage: %s <hash>\n", argv[0]);
     return 1;
   }
+
+
   
   const char *filename = "rockyou_part_aa";
   FILE *file = fopen(filename, "r");
 
+	if (!file) {
+	perror("fopen");
+	return 1;
+	}
+	
   const char *dots[] = {".  ", ".. ", "...", "   "};
   int dot_index = 0;
   int count = 0;
@@ -290,8 +292,14 @@ int main(int argc, char** argv) {
 	}
 	fclose(file);
 	
-filename = "rockyou_part_ab";
+	filename = "rockyou_part_ab";
 	file = fopen(filename, "r");
+
+	if (!file) {
+	perror("fopen");
+	return 1;
+	}
+
 	while (fgets(word, sizeof(word), file)) {
 		word[strcspn(word, "\n")] = 0;  // strip newline
 		//printf("Trying word: %s\n", word);

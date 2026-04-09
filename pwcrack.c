@@ -112,7 +112,6 @@ int8_t check_case_variations(char *word, unsigned char given_hash[32]) {
 	return 0;
 }
 
-// Unfinished
 int8_t check_special_variations(char* word, unsigned char given_hash[]) {
 	// Special variations: a/A/@, e/E/3, o/O/0, i,I,1
 	int len = strlen(word);
@@ -137,16 +136,16 @@ int8_t check_special_variations(char* word, unsigned char given_hash[]) {
             
 			char c = tolower(word[idx]);
 
-			if (c =- 'a') {
+			if (c == 'a') {
 				variant[idx] = (mask & (1 << bit)) ? '@' : 'a';
 			}
-			else if (c =- 'e') {
+			else if (c == 'e') {
 				variant[idx] = (mask & (1 << bit)) ? '3' : 'e';
 			}
-			else if (c =- 'a') {
+			else if (c == 'o') {
 				variant[idx] = (mask & (1 << bit)) ? '0' : 'o';
 			}
-			else if (c =- 'a') {
+			else if (c == 'i') {
 				variant[idx] = (mask & (1 << bit)) ? '1' : 'i';
 			}
         }

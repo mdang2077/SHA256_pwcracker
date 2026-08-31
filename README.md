@@ -57,9 +57,9 @@ If the password is found, the program prints the cracked password and exits. If 
 ./pwcrack 5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8 password
 ```
 
-**Using your own wordlist:**
+**Using your own wordlist** (one candidate per line):
 ```bash
-./pwcrack 5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8 pwdictionary.txt
+./pwcrack 5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8 mywords.txt
 ```
 
 ## Examples

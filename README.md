@@ -41,10 +41,26 @@ This produces a `./pwcrack` binary in the project directory.
 ## Usage
 
 ```bash
-./pwcrack <sha256_hash>
+./pwcrack <sha256_hash> [wordlist | word]
 ```
 
+- `<sha256_hash>` — the target hash, exactly 64 hexadecimal characters. Invalid input is rejected with an error.
+- `[wordlist | word]` — optional second argument:
+  - If it names an **existing file**, it's treated as a wordlist (one candidate per line).
+  - Otherwise it's treated as a **single word** to test directly (still trying case and leet-speak variations).
+  - If omitted, the cracker searches the bundled rockyou wordlist (`rockyou_part_aa` and `rockyou_part_ab`).
+
 If the password is found, the program prints the cracked password and exits. If not found, it reports that no match was found.
+
+**Test a single word:**
+```bash
+./pwcrack 5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8 password
+```
+
+**Using your own wordlist:**
+```bash
+./pwcrack 5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8 pwdictionary.txt
+```
 
 ## Examples
 
@@ -71,6 +87,16 @@ Output: Found password: SHA256(p@ssw0rd) = a075d17f3d453073853f813838c15b8023b8c
 Input:  ./pwcrack 0000000000000000000000000000000000000000000000000000000000000000
 Output: Could not find a matching password
 ```
+
+## Testing
+
+Build and run the unit tests:
+
+```bash
+make test
+```
+
+This compiles a separate `pwcrack_test` binary (tests gated behind `-DTESTING`) and runs it, printing `ALL TESTS PASSED!` on success.
 
 ## Cleanup
 

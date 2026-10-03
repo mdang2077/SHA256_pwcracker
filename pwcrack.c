@@ -14,6 +14,11 @@
 
 const int SHA_LENGTH = 32;
 
+// Maps a single hex character to its 0..15 value.
+// Precondition: c is a valid hex digit. Callers validate the full hash with
+// is_valid_hash() before conversion, so invalid input never reaches here; as a
+// defensive fallback a non-hex character maps to 0 rather than signaling an
+// error (keeping the return type a plain digit value).
 int hex_to_dec(char c)
 {
 	char input = toupper(c);
@@ -68,6 +73,11 @@ int8_t check_password(char password[], unsigned char given_hash[32])
 	// EVP_Digest is the non-deprecated one-shot SHA256 API in OpenSSL 3.
 	EVP_Digest(password, strlen(password), password_hash, &md_len, EVP_sha256(), NULL);
 
+	// NOTE: candidate passwords and their hashes are left on the stack rather
+	// than wiped. That's fine for a classroom cracker, but if this hashing
+	// pattern is reused where recovered secrets are sensitive, scrub the
+	// buffers with OPENSSL_cleanse() before they go out of scope.
+
 	return memcmp(password_hash, given_hash, SHA256_DIGEST_LENGTH) == 0;
 }
 
@@ -112,6 +122,14 @@ int8_t crack_variations(char *word, unsigned char given_hash[32])
 	int len = strlen(word);
 	if (len == 0) {
 		return 0;  // nothing to vary; exact match already tried by caller
+	}
+
+	// `len` is bounded by the caller's input buffers (word[4096] in
+	// search_wordlist, word[256] in crack_single_word), so the VLAs below stay
+	// within a few tens of KB of stack. Clamp defensively so a future caller
+	// with an unbounded buffer can't blow the stack via the VLA allocation.
+	if (len > 4096) {
+		return 0;  // over our supported word length: exact-match only
 	}
 
 	char options[len][3];

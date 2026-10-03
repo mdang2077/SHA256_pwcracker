@@ -38,6 +38,21 @@ make
 
 This produces a `./pwcrack` binary in the project directory.
 
+## Wordlist
+
+The default (no-argument) run searches two files named `rockyou_part_aa` and
+`rockyou_part_ab`. These are **not** committed to the repo (the rockyou corpus is
+large and is a leaked-password dataset, so it shouldn't be redistributed here).
+To use the default search, supply them yourself:
+
+```bash
+# download rockyou.txt from a source you trust, then split it into the two parts:
+split -n l/2 rockyou.txt rockyou_part_a   # produces rockyou_part_aa and rockyou_part_ab
+```
+
+Alternatively, skip the default entirely and pass your own wordlist (or a single
+word) as the second argument — see **Usage** below.
+
 ## Usage
 
 ```bash
@@ -48,7 +63,7 @@ This produces a `./pwcrack` binary in the project directory.
 - `[wordlist | word]` — optional second argument:
   - If it names an **existing file**, it's treated as a wordlist (one candidate per line).
   - Otherwise it's treated as a **single word** to test directly (still trying case and leet-speak variations).
-  - If omitted, the cracker searches the bundled rockyou wordlist (`rockyou_part_aa` and `rockyou_part_ab`).
+  - If omitted, the cracker searches `rockyou_part_aa` and `rockyou_part_ab` (see **Wordlist** above — you supply these).
 
 If the password is found, the program prints the cracked password and exits. If not found, it reports that no match was found.
 
